@@ -1,0 +1,65 @@
+name: Twitch Recorder
+
+on:
+  workflow_dispatch:   # اجرا به صورت دستی از تب Actions
+    inputs:
+      channel:
+        description: "bigezmoge"
+        required: false
+  schedule:
+    - cron: "*/10 * * * *"   # هر 10 دقیقه (به وقت UTC) چک می‌کند
+
+concurrency:
+  group: twitch-recorder
+  cancel-in-progress: false   # از اجرای همزمان جلوگیری می‌کند
+
+env:
+  CHANNEL: "نام_کانال_توییچ_اینجا"   # 👈 اینو تغییر بده
+  GDRIVE_REMOTE: "remote"            # اسم remote که توی rclone ساختی
+  GDRIVE_DIR: "twitch-records"       # فولدر مقصد روی گوگل درایو
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 720   # حداکثر 12 ساعت ضبط
+
+    steps:
+      - name: اگر کانال دستی وارد شد، همونو ست کن
+        if: ${{ github.event.inputs.channel != '' }}
+        run: echo "CHANNEL=${{ github.event.inputs.channel }}" >> $GITHUB_ENV
+
+      - name: نصب ابزارها
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y streamlink ffmpeg rclone
+
+      - name: تنظیم rclone با Secret
+        env:
+          RCLONE_CONF: ${{ secrets.RCLONE_CONF }}
+        run: |
+          mkdir -p ~/.config/rclone
+          echo "$RCLONE_CONF" > ~/.config/rclone/rclone.conf
+          chmod 600 ~/.config/rclone/rclone.conf
+          rclone about ${GDRIVE_REMOTE}: || (echo "❌ کانفیگ rclone یا remote درست نیست" && exit 1)
+
+      - name: ساخت پوشه خروجی
+        run: mkdir -p videos
+
+      - name: چک لایو بودن و ضبط
+        run: |
+          TS=$(date -u +'%Y-%m-%d_%H-%M-%S')
+          OUT="videos/${CHANNEL}_${TS}.mp4"
+          echo "Checking $CHANNEL ..."
+          if streamlink --twitch-disable-ads https://twitch.tv/$CHANNEL best -o "$OUT"; then
+            echo "🎬 Saved: $OUT"
+          else
+            echo "🔕 Not live. Skipping upload."
+            [ -f "$OUT" ] && [ ! -s "$OUT" ] && rm -f "$OUT"
+            exit 0
+          fi
+
+      - name: آپلود به Google Drive
+        run: |
+          rclone copy --fast-list videos "${GDRIVE_REMOTE}:${GDRIVE_DIR}/${CHANNEL}/"
+          echo "✅ Uploaded. Recent files on Drive:"
+          rclone ls "${GDRIVE_REMOTE}:${GDRIVE_DIR}/${CHANNEL}/" | tail -n 5
