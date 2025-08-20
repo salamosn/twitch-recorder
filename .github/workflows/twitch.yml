@@ -1,7 +1,7 @@
 name: Twitch Recorder
 
 on:
-  workflow_dispatch:   # اجرا به صورت دستی از تب Actions
+  workflow_dispatch:
     inputs:
       channel:
         description: "bigezmoge"
@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: false   # از اجرای همزمان جلوگیری می‌کند
 
 env:
-  CHANNEL: "نام_کانال_توییچ_اینجا"   # 👈 اینو تغییر بده
+  CHANNEL: "bigezmoge"
   GDRIVE_REMOTE: "remote"            # اسم remote که توی rclone ساختی
   GDRIVE_DIR: "twitch-records"       # فولدر مقصد روی گوگل درایو
 
@@ -60,6 +60,9 @@ jobs:
 
       - name: آپلود به Google Drive
         run: |
-          rclone copy --fast-list videos "${GDRIVE_REMOTE}:${GDRIVE_DIR}/${CHANNEL}/"
-          echo "✅ Uploaded. Recent files on Drive:"
-          rclone ls "${GDRIVE_REMOTE}:${GDRIVE_DIR}/${CHANNEL}/" | tail -n 5
+          DATE=$(date -u +'%Y-%m-%d')
+          TIME=$(date -u +'%H-%M-%S')
+          DEST_FOLDER="${GDRIVE_DIR}/${CHANNEL}/${DATE}_${TIME}"
+          rclone copy --fast-list videos "${GDRIVE_REMOTE}:$DEST_FOLDER"
+          echo "✅ Uploaded to $DEST_FOLDER. Recent files on Drive:"
+          rclone ls "${GDRIVE_REMOTE}:$DEST_FOLDER" | tail -n 5
