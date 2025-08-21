@@ -15,7 +15,7 @@ concurrency:
 
 env:
   CHANNEL: "bigezmoge"
-  GDRIVE_REMOTE: "remote"            # اسم remote که توی rclone ساختی
+  GDRIVE_REMOTE: "gdrive"            # اسم remote که توی rclone ساختی
   GDRIVE_DIR: "twitch-records"       # فولدر مقصد روی گوگل درایو
 
 jobs:
