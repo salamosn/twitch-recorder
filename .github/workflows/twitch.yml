@@ -66,3 +66,10 @@ jobs:
           rclone copy --fast-list videos "${GDRIVE_REMOTE}:$DEST_FOLDER"
           echo "✅ Uploaded to $DEST_FOLDER. Recent files on Drive:"
           rclone ls "${GDRIVE_REMOTE}:$DEST_FOLDER" | tail -n 5
+          - name: Setup rclone
+  run: |
+    mkdir -p ~/.config/rclone
+    echo "${{ secrets.RCLONE_CONF }}" > ~/.config/rclone/rclone.conf
+
+      - name: Test rclone
+        run: rclone about gdrive:
