@@ -16,15 +16,13 @@ jobs:
       - name: Set up rclone config
         run: |
           mkdir -p ~/.config/rclone
-          echo "${{ secrets.RCLONE_CONFIG_CONTENT }}" > ~/.config/rclone/rclone.conf
+          echo "${{ secrets.RCLONE_CONF }}" > ~/.config/rclone/rclone.conf
+          chmod 600 ~/.config/rclone/rclone.conf
           rclone version
+
+      - name: Test rclone connection
+        run: rclone about gdrive: || (echo "❌ کانفیگ یا remote درست نیست" && exit 1)
 
       - name: Upload folder to Google Drive
         run: |
           rclone copy ./my-folder gdrive:/backup -P
-             run: |
-                 mkdir -p ~/.config/rclone
-               echo "${{ secrets.RCLONE_CONF }}" > ~/.config/rclone/rclone.conf
-
-               - name: Test rclone
-            run: rclone about gdrive:
