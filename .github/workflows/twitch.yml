@@ -4,19 +4,19 @@ on:
   workflow_dispatch:
     inputs:
       channel:
-        description: "bigezmoge"
+        description: "نام کانال توییچ (مثال: bigezmoge)"
         required: false
   schedule:
-    - cron: "*/10 * * * *"   # هر 10 دقیقه (به وقت UTC) چک می‌کند
+    - cron: "*/10 * * * *"   # هر 10 دقیقه یکبار (به وقت UTC) چک می‌کند
 
 concurrency:
   group: twitch-recorder
-  cancel-in-progress: false   # از اجرای همزمان جلوگیری می‌کند
+  cancel-in-progress: false
 
 env:
   CHANNEL: "bigezmoge"
-  GDRIVE_REMOTE: "gdrive"            # اسم remote که توی rclone ساختی
-  GDRIVE_DIR: "twitch-records"       # فولدر مقصد روی گوگل درایو
+  GDRIVE_REMOTE: "gdrive"            # اسم remote در rclone.conf
+  GDRIVE_DIR: "twitch-records"       # پوشه مقصد در گوگل‌درایو
 
 jobs:
   record:
@@ -31,7 +31,8 @@ jobs:
       - name: نصب ابزارها
         run: |
           sudo apt-get update
-          sudo apt-get install -y streamlink ffmpeg rclone
+          sudo apt-get install -y streamlink ffmpeg curl
+          curl https://rclone.org/install.sh | sudo bash
 
       - name: تنظیم rclone با Secret
         env:
@@ -64,12 +65,5 @@ jobs:
           TIME=$(date -u +'%H-%M-%S')
           DEST_FOLDER="${GDRIVE_DIR}/${CHANNEL}/${DATE}_${TIME}"
           rclone copy --fast-list videos "${GDRIVE_REMOTE}:$DEST_FOLDER"
-          echo "✅ Uploaded to $DEST_FOLDER. Recent files on Drive:"
+          echo "✅ Uploaded to $DEST_FOLDER"
           rclone ls "${GDRIVE_REMOTE}:$DEST_FOLDER" | tail -n 5
-          - name: Setup rclone
-  run: |
-    mkdir -p ~/.config/rclone
-    echo "${{ secrets.RCLONE_CONF }}" > ~/.config/rclone/rclone.conf
-
-      - name: Test rclone
-        run: rclone about gdrive:
